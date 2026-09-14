@@ -1,0 +1,440 @@
+{
+  "name": "Technical_Analyst",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=You have one tool called Call 'Main_analysis'.\n\nFor every stock request you MUST call the tool.\n\nThe tool requires exactly one parameter:\n\nticker\n\nExamples:\n\nAdani Power -> ticker=\"ADANIPOWER\"\nReliance -> ticker=\"RELIANCE\"\nTCS -> ticker=\"TCS\"\n\nNever call the tool without ticker."
+        }
+      },
+      "id": "515b3f3f-2da8-42ab-afb6-bdd5ba005e27",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        0,
+        32
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent\n",
+        "height": 520,
+        "width": 820,
+        "color": 4
+      },
+      "id": "650493bc-5b23-4545-8fbf-6f6794dcb28a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -112
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "model_temperature",
+              "value": 0.8
+            },
+            {
+              "name": "token_length",
+              "value": 500
+            }
+          ],
+          "string": [
+            {
+              "name": "system_command",
+              "value": "=You are a friendly chatbot. User name is {{ $json?.message?.from?.first_name }}. User system language is {{ $json?.message?.from?.language_code }}. First, detect user text language. Next, provide your reply in the same language. Include several suitable emojis in your answer."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "25abace8-bcdc-4fd4-9005-010b37e3ab22",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -288,
+        144
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "message.text",
+              "value": "={{ $json?.message?.text || \"\" }}"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "id": "fcbdee0b-52e7-43a2-a11c-b298e6fceee4",
+      "name": "PreProcessing",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -512,
+        144
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json?.message?.text || \"\" }}"
+      },
+      "id": "54f67026-7097-4b75-925d-484ff1ff3d5d",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        64,
+        256
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c6e17c59-9d40-49c2-a60e-b88c73a7a9b7",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -736,
+        464
+      ],
+      "typeVersion": 1.1,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "a39325a0-44f4-4e1e-8f75-9c5dc4ba540d",
+      "name": "Download Chart",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -64,
+        464
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.chart-img.com/v2/tradingview/advanced-chart/storage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR API KEY HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"theme\": \"dark\",\n  \"interval\": \"1W\",\n  \"symbol\": \"NSE:{{ $json.ticker }}\",\n  \"override\": {\n    \"showStudyLastValue\": false\n  },\n  \"studies\": [\n    {\n      \"name\": \"Volume\",\n      \"forceOverlay\": true\n    },\n    {\n      \"name\": \"MACD\",\n      \"override\": {\n        \"Signal.linewidth\": 2,\n        \"Signal.color\": \"rgb(255,65,129)\"\n      }\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "40023d28-74e5-4b56-bd44-2d3d077f7724",
+      "name": "Get Chart1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -288,
+        464
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Role\nYou are an expert financial analyst with over 50 years of experience gained from working at the National Stock Exchange (NSE). Your expertise in technical analysis of stock charts is unparalleled, having witnessed and analyzed countless market cycles, bull runs, bear markets, and economic shifts across multiple decades.\n\nYour role is to analyze financial charts provided to you and offer comprehensive insights into the technical aspects, including candlestick patterns, MACD indicators, volume trends, and overall market sentiment. You must provide a detailed breakdown of the chart, highlighting key areas of interest and actionable insights drawn from your extensive market experience.\n\nWhen analyzing a stock chart, always include the following:\n\nCandlestick Analysis:\n\nIdentify and explain any significant candlestick patterns (e.g., bullish engulfing, doji, hammer).\n\nComment on the overall trend (bullish, bearish, or sideways).\n\nHighlight any breakout or pullback zones.\n\nDraw upon your decades of experience to contextualize these patterns within broader market conditions.\n\nMACD Analysis:\n\nDescribe the current state of the MACD line and Signal line (e.g., bullish crossover, bearish crossover).\n\nDiscuss the MACD histogram and its implications for momentum.\n\nIdentify any divergences between the MACD and the price action.\n\nReference similar patterns you've observed throughout your career at major exchanges.\n\nVolume Analysis:\n\nHighlight any significant changes in trading volume.\n\nExplain how volume supports or contradicts price movements.\n\nIndicate any unusual spikes in volume that may suggest institutional activity.\n\nApply your institutional knowledge from working at NSE  to interpret volume patterns.\n\nSupport and Resistance Levels:\n\nIdentify key support and resistance zones based on the chart.\n\nDiscuss the importance of these levels for potential reversals or breakouts.\n\nLeverage your experience to assess the strength and reliability of these levels.\n\nActionable Insights & Final Verdict:\n\nProvide clear guidance on potential buy, sell, or hold strategies based on your extensive experience.\n\nSuggest what to watch for in the near term, including confirmation signals or potential risks.\n\nCRITICAL: Based on your comprehensive analysis and 50+ years of market experience, provide your final verdict: BUY, SELL, or HOLD. While this is not financial advice, use your utmost analytical skills and decades of market wisdom to give a definitive recommendation with clear reasoning.\n\nOther Observations:\n\nNote any patterns or indicators that are relevant to the analysis.\n\nOffer insights into market sentiment or other broader trends based on the chart.\n\nShare any relevant historical parallels or market wisdom gained from your extensive career.\n\nFinal Verdict Requirement: Always conclude your analysis with a clear, confident recommendation (BUY/SELL/HOLD) supported by your technical analysis and decades of market experience. Explain the key factors that led to this decision and any conditions that might change your outlook.\n\nBe clear, concise, and data-driven in your analysis. Your goal is to provide actionable information that traders and investors can use to make informed decisions. Always explain your reasoning for any conclusions you draw from the chart, backing them with your unparalleled experience from working at the world's most prestigious stock exchanges\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        464
+      ],
+      "id": "47c5807f-568f-4d66-b4c0-0fe53c897f43",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Your id here",
+          "name": "Your account Name"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        144
+      ],
+      "id": "ed74a613-7128-4057-9be0-2dfb864a00ab",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    fullInput: $input.first().json,\n    ticker: $input.first().json.ticker\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        464
+      ],
+      "id": "b18e43a8-5c57-4573-95c7-d04b922cd511",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "eKMb73hWI096PbB7",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/eKMb73hWI096PbB7",
+          "cachedResultName": "Main_analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{$fromAI(\"ticker\")}}"
+          },
+          "matchingColumns": [
+            "ticker"
+          ],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        256
+      ],
+      "id": "c3b7686b-62c0-4e51-858c-6095ba434f14",
+      "name": "Call 'Main_analysis'"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -64,
+        256
+      ],
+      "id": "cbadaa84-a664-4151-8db9-f5fe3fc8cb22",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Your ID here",
+          "name": "Your account name"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {
+          "message": {
+            "text": "Analyze Reliance stock",
+            "chat": {
+              "id": 123456789
+            },
+            "from": {
+              "id": 123456789,
+              "username": "Samiksha",
+              "first_name": "Samiksha"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chart1": {
+      "main": [
+        [
+          {
+            "node": "Download Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PreProcessing": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Chart": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "PreProcessing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get Chart1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Main_analysis'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a5f9b029-3491-4091-91d8-5aed9068c0d4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "your id here"
+  },
+  "nodeGroups": [],
+  "id": "NTtE39LNmZ2G8IGD",
+  "tags": []
+}
