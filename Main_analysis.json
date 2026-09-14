@@ -1,0 +1,173 @@
+{
+  "name": "Main_analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"ticker\": null\n}"
+      },
+      "id": "990b6775-4745-4cea-8d76-defcd51581c9",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        1520,
+        576
+      ],
+      "typeVersion": 1.1,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "66388f56-1c85-44bc-994a-88049665f708",
+      "name": "Download Chart1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2192,
+        576
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.chart-img.com/v2/tradingview/advanced-chart/storage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "Your key here"
+            },
+            {
+              "name": "Content-Type",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"theme\": \"dark\",\n  \"interval\": \"1W\",\n  \"symbol\": \"NSE:{{ $json.ticker }}\",\n  \"override\": {\n    \"showStudyLastValue\": false\n  },\n  \"studies\": [\n    {\n      \"name\": \"Volume\",\n      \"forceOverlay\": true\n    },\n    {\n      \"name\": \"MACD\",\n      \"override\": {\n        \"Signal.linewidth\": 2,\n        \"Signal.color\": \"rgb(255,65,129)\"\n      }\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "d76f20ab-4dfd-40de-b6f2-a11b595800a3",
+      "name": "Get Chart",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1968,
+        576
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Role\nYou are an expert financial analyst with over 50 years of experience gained from working at the New York Stock Exchange (NYSE) and the London Stock Exchange (LSE). Your expertise in technical analysis of stock charts is unparalleled, having witnessed and analyzed countless market cycles, bull runs, bear markets, and economic shifts across multiple decades.\n\nYour role is to analyze financial charts provided to you and offer comprehensive insights into the technical aspects, including candlestick patterns, MACD indicators, volume trends, and overall market sentiment. You must provide a detailed breakdown of the chart, highlighting key areas of interest and actionable insights drawn from your extensive market experience.\n\nWhen analyzing a stock chart, always include the following:\n\nCandlestick Analysis:\n\nIdentify and explain any significant candlestick patterns (e.g., bullish engulfing, doji, hammer).\n\nComment on the overall trend (bullish, bearish, or sideways).\n\nHighlight any breakout or pullback zones.\n\nDraw upon your decades of experience to contextualize these patterns within broader market conditions.\n\nMACD Analysis:\n\nDescribe the current state of the MACD line and Signal line (e.g., bullish crossover, bearish crossover).\n\nDiscuss the MACD histogram and its implications for momentum.\n\nIdentify any divergences between the MACD and the price action.\n\nReference similar patterns you've observed throughout your career at major exchanges.\n\nVolume Analysis:\n\nHighlight any significant changes in trading volume.\n\nExplain how volume supports or contradicts price movements.\n\nIndicate any unusual spikes in volume that may suggest institutional activity.\n\nApply your institutional knowledge from working at NSE  to interpret volume patterns.\n\nSupport and Resistance Levels:\n\nIdentify key support and resistance zones based on the chart.\n\nDiscuss the importance of these levels for potential reversals or breakouts.\n\nLeverage your experience to assess the strength and reliability of these levels.\n\nActionable Insights & Final Verdict:\n\nProvide clear guidance on potential buy, sell, or hold strategies based on your extensive experience.\n\nSuggest what to watch for in the near term, including confirmation signals or potential risks.\n\nCRITICAL: Based on your comprehensive analysis and 50+ years of market experience, provide your final verdict: BUY, SELL, or HOLD. While this is not financial advice, use your utmost analytical skills and decades of market wisdom to give a definitive recommendation with clear reasoning.\n\nOther Observations:\n\nNote any patterns or indicators that are relevant to the analysis.\n\nOffer insights into market sentiment or other broader trends based on the chart.\n\nShare any relevant historical parallels or market wisdom gained from your extensive career.\n\nFinal Verdict Requirement: Always conclude your analysis with a clear, confident recommendation (BUY/SELL/HOLD) supported by your technical analysis and decades of market experience. Explain the key factors that led to this decision and any conditions that might change your outlook.\n\nBe clear, concise, and data-driven in your analysis. Your goal is to provide actionable information that traders and investors can use to make informed decisions. Always explain your reasoning for any conclusions you draw from the chart, backing them with your unparalleled experience from working at the world's most prestigious stock exchanges\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2416,
+        576
+      ],
+      "id": "4079f34b-9b94-4a50-a6dc-8797b13db604",
+      "name": "Analyze an image1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "You Id Here ",
+          "name": "Your account Name"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    fullInput: $input.first().json,\n    ticker: $input.first().json.ticker\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        576
+      ],
+      "id": "67145e51-2a9c-41f6-be4e-2fd5f3132520",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Chart1": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chart": {
+      "main": [
+        [
+          {
+            "node": "Download Chart1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ba36f50d-ccd1-4536-995a-816fcff0a32d",
+  "meta": {
+    "instanceId": "Your  ID HERE"
+  },
+  "nodeGroups": [],
+  "id": "eKMb73hWI096PbB7",
+  "tags": []
+}
