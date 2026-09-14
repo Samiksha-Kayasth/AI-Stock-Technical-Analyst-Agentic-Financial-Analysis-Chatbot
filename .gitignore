@@ -1,0 +1,23 @@
+# Secrets / environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# n8n/local data
+.n8n/
+n8n_data/
+database.sqlite
+*.sqlite
+*.sqlite3
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python / Node artifacts if used for supporting scripts
+__pycache__/
+node_modules/
